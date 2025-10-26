@@ -25,11 +25,13 @@ const scenario = {
 
 export default function DemoClient() {
   const [loading, setLoading] = useState(false);
+  const [genLoading, setGenLoading] = useState(false); // NEW
   const [tx, setTx] = useState<any[] | null>(null);
   const [ef, setEf] = useState<any[] | null>(null);
   const [fx, setFx] = useState<any[] | null>(null);
   const [after, setAfter] = useState<Totals | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<"sample" | "generated" | null>(null); // NEW
 
   // Reveal states
   const [revealing, setRevealing] = useState(false);
@@ -49,6 +51,7 @@ export default function DemoClient() {
       setTx(data.tx);
       setEf(data.ef);
       setFx(data.fx);
+      setSource("sample");
 
       // reset scenario view
       setAfter(null);
@@ -63,15 +66,48 @@ export default function DemoClient() {
       setTx(null);
       setEf(null);
       setFx(null);
+      setSource(null);
     } finally {
       setLoading(false);
     }
   };
 
+  // NEW: generate 30 Stripe Issuing test transactions (from your API)
+  const generateTransactions = async () => {
+    try {
+      setGenLoading(true);
+      setError(null);
+
+      const res = await fetch("/api/transactions/generate", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to generate transactions");
+      }
+
+      // json.data is an array of issuing.transactions (your route returns it)
+      setTx(json.data || []);
+      setSource("generated");
+
+      // If your baseline math needs ef/fx as well, leave as-is or load defaults:
+      // setEf(defaultEf); setFx(defaultFx);
+
+      // reset scenario view
+      setAfter(null);
+      setShowScenarioCols(false);
+      setRevealingScenario(false);
+
+      // quick reveal animation for consistency
+      setRevealing(true);
+      setTimeout(() => setRevealing(false), 800);
+    } catch (e: any) {
+      setError(e?.message || String(e));
+    } finally {
+      setGenLoading(false);
+    }
+  };
+
   const runScenario = () => {
     if (!tx || !ef || !fx) return;
-
-    // show scenario columns immediately; populate after 1s
     setShowScenarioCols(true);
     setRevealingScenario(true);
 
@@ -96,18 +132,28 @@ export default function DemoClient() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={loadSample}
           className="px-4 py-2 rounded-xl bg-emerald-600 text-white disabled:opacity-60"
-          disabled={loading}
+          disabled={loading || genLoading}
         >
           {loading ? "Loading…" : "Use sample data"}
         </button>
+
+        {/* NEW: Generate 30 test transactions */}
+        <button
+          onClick={generateTransactions}
+          className="px-4 py-2 rounded-xl bg-blue-600 text-white disabled:opacity-60"
+          disabled={loading || genLoading}
+        >
+          {genLoading ? "Generating…" : "Generate 30 transactions"}
+        </button>
+
         <button
           onClick={runScenario}
           className="px-4 py-2 rounded-xl bg-slate-900 text-white disabled:opacity-60"
-          disabled={!base || revealing}
+          disabled={!base || revealing || genLoading || loading}
         >
           {scenario.title}
         </button>
@@ -117,15 +163,23 @@ export default function DemoClient() {
       <div className="text-xs p-3 rounded-xl border border-zinc-700/40">
         <div>
           tx: {tx?.length ?? 0} • ef: {ef?.length ?? 0} • fx: {fx?.length ?? 0}
+          {source ? (
+            <span className="ml-2 opacity-70">
+              source: <span className="uppercase">{source}</span>
+            </span>
+          ) : null}
         </div>
+        {(loading || genLoading) && (
+          <div className="opacity-70 mt-1">Working…</div>
+        )}
         {error && <div className="text-red-500 mt-1">Error: {error}</div>}
         {tx && tx.length > 0 && (
           <details className="mt-2">
             <summary className="cursor-pointer">
-              See an example transaction entry
+              See all generated transactions (JSON)
             </summary>
-            <pre className="mt-2 overflow-auto">
-              {JSON.stringify(tx[0], null, 2)}
+            <pre className="mt-2 max-h-80 overflow-auto">
+              {JSON.stringify(tx, null, 2)}
             </pre>
           </details>
         )}
@@ -140,7 +194,7 @@ export default function DemoClient() {
               ? "—"
               : `$${Math.round(base.totalUSD).toLocaleString()}`
           }
-          loading={loading || revealing}
+          loading={loading || genLoading || revealing}
         />
         <Tile
           title="Baseline: total emissions"
@@ -149,7 +203,7 @@ export default function DemoClient() {
               ? "—"
               : `${Math.round(base.totalKg).toLocaleString()} kg CO₂e`
           }
-          loading={loading || revealing}
+          loading={loading || genLoading || revealing}
         />
         {showScenarioCols && (
           <Tile
@@ -163,7 +217,7 @@ export default function DemoClient() {
             }
             accent={!!after}
             loading={revealingScenario}
-            valueClassName={after ? "text-emerald-600" : ""} // <-- now applied
+            valueClassName={after ? "text-emerald-600" : ""}
           />
         )}
       </div>
@@ -185,7 +239,7 @@ export default function DemoClient() {
             </tr>
           </thead>
           <tbody>
-            {loading || revealing
+            {loading || genLoading || revealing
               ? Array.from({ length: 8 }).map((_, i) => (
                   <tr
                     key={`skeleton-${i}`}
@@ -245,7 +299,6 @@ export default function DemoClient() {
 
                       {showScenarioCols && (
                         <>
-                          {/* kg after */}
                           <Td className="text-right">
                             {revealingScenario ? (
                               <div className="ml-auto h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
@@ -255,8 +308,6 @@ export default function DemoClient() {
                               "\u00A0"
                             )}
                           </Td>
-
-                          {/* Δ kg — blank when 0 */}
                           <Td
                             className={`text-right ${
                               !revealingScenario &&
