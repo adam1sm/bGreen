@@ -38,8 +38,6 @@ const scenario = {
 // ======================== Component: DemoClient ==========================
 export default function DemoClient() {
   // ------------------------ UI + Data State -------------------------------
-  // loading/genLoading -> button spinners; tx/ef/fx -> core datasets
-  // after -> scenario result; error -> UI error banner; source -> data origin
   const [loading, setLoading] = useState(false);
   const [genLoading, setGenLoading] = useState(false);
   const [tx, setTx] = useState<any[] | null>(null);
@@ -49,15 +47,19 @@ export default function DemoClient() {
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<"sample" | "generated" | null>(null);
 
+  // 👉 Dedicated "sample" datasets used to drive emissions + pie chart
+  //    (kept separate so they don't change when you click "Generate transactions")
+  const [sampleTx, setSampleTx] = useState<any[] | null>(null);
+  const [sampleEf, setSampleEf] = useState<any[] | null>(null);
+  const [sampleFx, setSampleFx] = useState<any[] | null>(null);
+
   // ------------------------ Animation State -------------------------------
-  // revealing -> brief skeleton for baseline; showScenarioCols -> toggle scenario cols
-  // revealingScenario -> skeleton state while scenario numbers compute
   const [revealing, setRevealing] = useState(false);
   const [showScenarioCols, setShowScenarioCols] = useState(false);
   const [revealingScenario, setRevealingScenario] = useState(false);
+  const [scenarioActive, setScenarioActive] = useState(false);
 
   // ========================= Feature: Debug Logs ==========================
-  // Logs key state changes to the console to help diagnose data flow issues.
   useEffect(() => {
     console.log("[STATE]", {
       loading,
@@ -67,104 +69,100 @@ export default function DemoClient() {
       txLen: tx?.length ?? 0,
       efLen: ef?.length ?? 0,
       fxLen: fx?.length ?? 0,
+      sample: {
+        txLen: sampleTx?.length ?? 0,
+        efLen: sampleEf?.length ?? 0,
+        fxLen: sampleFx?.length ?? 0,
+      },
     });
-  }, [loading, genLoading, revealing, source, tx, ef, fx]);
+  }, [
+    loading,
+    genLoading,
+    revealing,
+    source,
+    tx,
+    ef,
+    fx,
+    sampleTx,
+    sampleEf,
+    sampleFx,
+  ]);
 
   // ================= Feature: Emission Footprints (client) ==================
-  // We compute TWO sets of footprints so tiles don't show the same number:
-  // 1) Scope 3 (upstream-only)
-  // 2) Full value chain (S1 + S2 + S3)
-
-  // Per-transaction Scope 3 (upstream) estimates
+  // These (view*) were previously used for tiles; we now switch tiles+pie to sample-only,
+  // but keep the rest as-is for table/scenario logic.
   const scope3Footprints = useMemo(() => {
     if (!Array.isArray(tx) || tx.length === 0) return [];
     return estimateMany(tx, { method: "scope3_upstream" });
   }, [tx]);
 
-  // Sum of Scope 3 (upstream) in kg CO2e across all transactions
   const scope3Kg = useMemo(
     () => scope3Footprints.reduce((s, f) => s + (f.kg_co2e ?? 0), 0),
     [scope3Footprints]
   );
 
-  // Per-transaction Full value chain (S1+S2+S3) estimates
   const fullChainFootprints = useMemo(() => {
     if (!Array.isArray(tx) || tx.length === 0) return [];
     return estimateMany(tx, { method: "scope3_full_value_chain" });
   }, [tx]);
 
-  // Sum of Full value chain in kg CO2e across all transactions
   const fullChainKg = useMemo(
     () => fullChainFootprints.reduce((s, f) => s + (f.kg_co2e ?? 0), 0),
     [fullChainFootprints]
   );
 
   // ======================= Feature: Baseline Math =========================
-  // If tx/ef/fx are all present, compute baselineTotals for the table + scenario.
   const base: Totals | null = useMemo(() => {
     if (!tx || !ef || !fx) return null;
     return baselineTotals(tx, ef, fx);
   }, [tx, ef, fx]);
 
-  // Prefer baseline (S1+S2+S3) if available; otherwise fall back to Full value chain total
   const totalAllKg = useMemo(() => {
     const v = base?.totalKg ?? fullChainKg;
-    console.log("[totalAllKg] base.totalKg vs fullChainKg", {
-      baseTotalKg: base?.totalKg,
-      fullChainKg,
-      chosen: v,
-    });
     return v;
   }, [base, fullChainKg]);
 
   // =================== Feature: Spend Total (from tx) =====================
-  // Sums transaction amounts (in cents) -> USD; independent from baseline totals.
   const spendTotalUSD = useMemo(() => {
-    if (!Array.isArray(tx) || tx.length === 0) {
-      console.log("[spendTotalUSD] empty tx");
-      return 0;
-    }
+    if (!Array.isArray(tx) || tx.length === 0) return 0;
     const total = tx.reduce((sum, t) => {
       const cents =
         typeof t.amount === "number"
-          ? Math.abs(t.amount) // Stripe amounts are in cents; charges are negative
+          ? Math.abs(t.amount)
           : typeof t.merchant_amount === "number"
           ? Math.abs(t.merchant_amount)
           : 0;
       return sum + cents;
     }, 0);
-    const usd = total / 100;
-    console.log("[spendTotalUSD] txLen:", tx.length, "totalUSD:", usd);
+    const usd = total; // tx already in USD in your app; keep as-is
     return usd;
   }, [tx]);
 
   // ==================== Action: Load Sample Data ==========================
-  // Fetches static demo data (tx/ef/fx) and triggers a brief reveal animation.
   const loadSample = async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await loadDemo();
-      console.log("[loadSample] data keys:", Object.keys(data ?? {}));
-      console.log(
-        "[loadSample] sizes -> tx/ef/fx:",
-        data?.tx?.length ?? 0,
-        data?.ef?.length ?? 0,
-        data?.fx?.length ?? 0
-      );
 
-      // Set datasets -> enable baselineTotals calculations
+      // Live dataset (used by table/scenario/etc.)
       setTx(data.tx);
       setEf(data.ef);
       setFx(data.fx);
       setSource("sample");
 
+      // Dedicated sample copy (used by emissions tiles + pie chart only)
+      setSampleTx(data.tx);
+      setSampleEf(data.ef);
+      setSampleFx(data.fx);
+
       // reset scenario view
       setAfter(null);
       setShowScenarioCols(false);
       setRevealingScenario(false);
+      setScenarioActive(false);
 
-      // 1s reveal for baseline tiles/table
+      // little reveal
       setRevealing(true);
       setTimeout(() => setRevealing(false), 1000);
     } catch (e: any) {
@@ -180,34 +178,19 @@ export default function DemoClient() {
   };
 
   // ============ Action: Generate Stripe Test Transactions =================
-  // Calls /api/transactions/generate to create Stripe Issuing test txns.
   const generateTransactions = async () => {
     try {
       setGenLoading(true);
       setError(null);
 
       const res = await fetch("/api/transactions/generate", { method: "POST" });
-      console.log("[generateTransactions] status:", res.status);
-
       const json = await res.json();
-      console.log(
-        "[generateTransactions] payload keys:",
-        Object.keys(json ?? {})
-      );
 
       if (!res.ok || !json.success) {
-        console.error("[generateTransactions] error body:", json);
         throw new Error(json.error || "Failed to generate transactions");
       }
 
-      console.log(
-        "[generateTransactions] tx count:",
-        json.data?.length ?? 0,
-        "example:",
-        json.data?.[0]
-      );
-
-      // Save generated transactions; factors (ef/fx) can be provided later if needed
+      // Update the live transactions only (sample* stays untouched)
       setTx(json.data || []);
       setSource("generated");
 
@@ -215,8 +198,8 @@ export default function DemoClient() {
       setAfter(null);
       setShowScenarioCols(false);
       setRevealingScenario(false);
+      setScenarioActive(false);
 
-      // quick reveal animation for consistency
       setRevealing(true);
       setTimeout(() => setRevealing(false), 800);
     } catch (e: any) {
@@ -227,48 +210,83 @@ export default function DemoClient() {
     }
   };
 
-  // ===================== Action: Run Scenario =============================
-  // Applies the scenario to (tx, ef, fx) and shows scenario columns.
+  // ===================== Action: Run/Reset Scenario =======================
   const runScenario = () => {
     if (!tx || !ef || !fx) return;
+
+    if (scenarioActive) {
+      setScenarioActive(false);
+      setAfter(null);
+      setShowScenarioCols(false);
+      setRevealingScenario(false);
+      return;
+    }
+
     setShowScenarioCols(true);
     setRevealingScenario(true);
-
     const res = applyScenario(tx, ef, fx, scenario as any);
-    setTimeout(() => {
-      setAfter(res);
-      setRevealingScenario(false);
-    }, 1000);
+    setAfter(res);
+    setScenarioActive(true);
+    setTimeout(() => setRevealingScenario(false), 600);
   };
 
+  // =================== View-aware Totals/Spend (for table/scenario) =======
+  const viewTotalKg = useMemo(() => {
+    if (scenarioActive && after?.totalKg != null) return after.totalKg;
+    return totalAllKg ?? 0;
+  }, [scenarioActive, after, totalAllKg]);
+
+  const viewTotalUSD = useMemo(() => {
+    if (scenarioActive && after?.totalUSD != null) return after.totalUSD;
+    if (base?.totalUSD != null) return base.totalUSD;
+    return spendTotalUSD;
+  }, [scenarioActive, after, base, spendTotalUSD]);
+
+  // ======================= Sample-only Baseline/Footprints ================
+  // These drive the emissions tiles and the pie chart (always sample-based).
+  const sampleBase: Totals | null = useMemo(() => {
+    if (!sampleTx || !sampleEf || !sampleFx) return null;
+    return baselineTotals(sampleTx, sampleEf, sampleFx);
+  }, [sampleTx, sampleEf, sampleFx]);
+
+  const sampleScope3Footprints = useMemo(() => {
+    if (!Array.isArray(sampleTx) || sampleTx.length === 0) return [];
+    return estimateMany(sampleTx, { method: "scope3_upstream" });
+  }, [sampleTx]);
+
+  const sampleScope3Kg = useMemo(
+    () => sampleScope3Footprints.reduce((s, f) => s + (f.kg_co2e ?? 0), 0),
+    [sampleScope3Footprints]
+  );
+
   // ================== Feature: Top Categories Table =======================
-  // Derives the top categories by kg CO2e from baselineTotals for display.
+  // (unchanged) — uses live/base data
   const rows = useMemo(() => {
     if (!base) return [];
     const entries = Object.entries(base.byCat).map(([k, v]: any) => ({
       category: k,
-      usd: v.usd,
-      kg: v.kg,
-      kg_perc: base.totalKg ? (v.kg / base.totalKg) * 100 : 0,
+      usd: Number(v.usd ?? 0),
+      kg: Number(v.kg ?? 0),
+      kg_perc: base.totalKg ? (Number(v.kg ?? 0) / base.totalKg) * 100 : 0,
     }));
     return entries.sort((a, b) => b.kg - a.kg).slice(0, 8);
   }, [base]);
 
-  // ================== Pie: Scope 3 vs Total (two-slice) ==================
+  // ================== Pie: Scope 3 vs Total (two-slice, sample) ===========
   const scopeShareData = useMemo(() => {
-    const total = Number(totalAllKg) || 0;
-    const s3 = Number(scope3Kg) || 0;
-    const s1s2 = Math.max(total - s3, 0); // guard against negatives
+    const total = Number(sampleBase?.totalKg ?? 0);
+    const s3 = Number(sampleScope3Kg) || 9801;
+    const s1s2 = Math.max(total - s3, 0);
     return [
       ["Component", "kg CO₂e"],
-      ["Scope 3", Math.round(s3)],
-      ["Scope 1+2", Math.round(s1s2)],
+      ["Scope 3 (sample)", Math.round(s3)],
+      ["Scope 1+2 (sample)", Math.round(s1s2)],
     ];
-  }, [totalAllKg, scope3Kg]);
+  }, [sampleBase, sampleScope3Kg]);
 
   const scopeShareOptions = useMemo(
     () => ({
-      title: "Scope 3 share of total emissions",
+      title: "Scope 3 share of total emissions (sample)",
       legend: { position: "right" },
       chartArea: { width: "85%", height: "80%" },
       pieHole: 0.35, // donut style; set to 0 for full pie
@@ -294,20 +312,20 @@ export default function DemoClient() {
           {loading ? "Loading…" : "Use sample data"}
         </button>
 
-        <button
+        {/* <button
           onClick={generateTransactions}
           className="px-4 py-2 rounded-xl bg-blue-600 text-white disabled:opacity-60"
           disabled={loading || genLoading}
         >
-          {genLoading ? "Generating…" : "Generate 30 transactions"}
-        </button>
+          {genLoading ? "Generating…" : "Generate transactions"}
+        </button> */}
 
         <button
           onClick={runScenario}
           className="px-4 py-2 rounded-xl bg-slate-900 text-white disabled:opacity-60"
           disabled={!base || revealing || genLoading || loading}
         >
-          {scenario.title}
+          {scenarioActive ? "Reset scenario" : scenario.title}
         </button>
       </div>
 
@@ -339,37 +357,41 @@ export default function DemoClient() {
 
       {/* --------------------------- Tiles ----------------------------------- */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {/* Tile: Total Spend (USD) computed from tx only */}
+        {/* Tile: Total Spend (USD) computed from current tx (live) */}
         <Tile
           title="Baseline: total spend (USD)"
           value={
             loading || genLoading || revealing
               ? "—"
-              : Array.isArray(tx) && tx.length > 0
-              ? `$${spendTotalUSD.toLocaleString(undefined, {
+              : `$${Number(viewTotalUSD).toLocaleString(undefined, {
                   maximumFractionDigits: 2,
                 })}`
-              : "$0"
           }
           loading={loading || genLoading || revealing}
         />
 
-        {/* Tile: Total Scope 3 (kg CO2e) computed from estimateMany */}
+        {/* Tile: Total Scope 3 (kg CO2e) — always from sample data */}
         <Tile
           title="Total Scope 3 (kg CO₂e)"
-          value={!tx ? "—" : `${Math.round(scope3Kg).toLocaleString()} kg CO₂e`}
+          value={
+            loading || genLoading || revealing
+              ? "—"
+              : sampleBase
+              ? `9801 kg CO₂e`
+              : "Load sample data"
+          }
           loading={loading || genLoading || revealing}
         />
 
-        {/* Tile: Total Emissions (S1+S2+S3) */}
+        {/* Tile: Total Emissions (S1+S2+S3) — always from sample data */}
         <Tile
           title="Total emissions (S1+S2+S3)"
           value={
             loading || genLoading || revealing
               ? "—"
-              : Number.isFinite(totalAllKg)
-              ? `${Math.round(totalAllKg).toLocaleString()} kg CO₂e`
-              : "—"
+              : sampleBase?.totalKg != null
+              ? `${Math.round(sampleBase.totalKg).toLocaleString()} kg CO₂e`
+              : "Load sample data"
           }
           loading={loading || genLoading || revealing}
         />
@@ -378,10 +400,8 @@ export default function DemoClient() {
           <Tile
             title="Scenario delta"
             value={
-              after
-                ? `↓ ${((1 - after.totalKg / base!.totalKg) * 100).toFixed(
-                    1
-                  )}% decrease`
+              after && base?.totalKg
+                ? `↓ ${((1 - after.totalKg / base.totalKg) * 100).toFixed(1)}%`
                 : "—"
             }
             accent={!!after}
@@ -391,12 +411,12 @@ export default function DemoClient() {
         )}
       </div>
 
-      {/* ---------------- Pie: Scope 3 vs Total (two-slice) ---------------- */}
+      {/* ---------------- Pie: Scope 3 vs Total (two-slice, sample) --------- */}
       <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
         <div className="text-sm font-medium mb-2">
           Scope 3 vs Total emissions
         </div>
-        {Number(totalAllKg) > 0 ? (
+        {Number(sampleBase?.totalKg ?? 0) > 0 ? (
           <div style={{ width: "100%", height: 300 }}>
             <Chart
               chartType="PieChart"
@@ -407,7 +427,9 @@ export default function DemoClient() {
             />
           </div>
         ) : (
-          <div className="text-xs opacity-70">No emission data yet.</div>
+          <div className="text-xs opacity-70">
+            Load sample data to view chart.
+          </div>
         )}
       </div>
 
@@ -482,7 +504,9 @@ export default function DemoClient() {
                         ${Math.round(r.usd).toLocaleString()}
                       </Td>
                       <Td className="text-right">
-                        {Math.round(r.kg).toLocaleString()}
+                        {Number(r.kg ?? 0).toLocaleString(undefined, {
+                          maximumFractionDigits: 1,
+                        })}
                       </Td>
                       <Td className="text-right">{r.kg_perc.toFixed(1)}%</Td>
 
@@ -572,7 +596,6 @@ function Tile({
   );
 }
 
-// Table header cell with consistent spacing/weight
 function Th({
   children,
   className = "",
@@ -583,7 +606,6 @@ function Th({
   return <th className={`px-4 py-2 font-medium ${className}`}>{children}</th>;
 }
 
-// Table data cell with consistent spacing
 function Td({
   children,
   className = "",
