@@ -1,0 +1,51 @@
+date,amount,currency,category,merchant,city,region,country
+2025-07-10,2940.34,GBP,Utilities-Electricity,PG&E,Berlin,BE,Germany
+2025-07-15,2292.58,GBP,Utilities-Electricity,PG&E,New York,NY,USA
+2025-06-05,1492.03,USD,Cloud/IT,Azure,San Francisco,CA,USA
+2025-06-05,4300.35,CAD,Cloud/IT,Google Cloud,London,ENG,UK
+2025-08-01,38.19,USD,Food,DoorDash,Austin,TX,USA
+2025-07-15,49.24,GBP,Food,Panera,New York,NY,USA
+2025-07-06,78.92,EUR,Shipping,FedEx,Seattle,WA,USA
+2025-07-07,3698.93,USD,Utilities-Electricity,Oncor,New York,NY,USA
+2025-06-16,195.52,EUR,Shipping,USPS,Chicago,IL,USA
+2025-06-06,1093.96,USD,Cloud/IT,AWS,Toronto,ON,Canada
+2025-07-14,1730.91,GBP,Utilities-Electricity,ConEd,Austin,TX,USA
+2025-06-22,35.86,USD,Facilities,Office Depot,San Francisco,CA,USA
+2025-07-21,537.53,USD,Utilities-Electricity,PG&E,Austin,TX,USA
+2025-08-12,2386.4,USD,Cloud/IT,Azure,Austin,TX,USA
+2025-06-28,220.55,USD,Travel-Hotel,Marriott,Seattle,WA,USA
+2025-08-08,2174.35,GBP,Cloud/IT,AWS,London,ENG,UK
+2025-08-07,2048.01,CAD,Cloud/IT,Azure,Toronto,ON,Canada
+2025-08-01,158.39,EUR,Shipping,UPS,Austin,TX,USA
+2025-08-16,1812.23,USD,Cloud/IT,Google Cloud,Austin,TX,USA
+2025-06-10,23.55,USD,Food,Panera,London,ENG,UK
+2025-05-31,281.24,EUR,Facilities,Office Depot,San Francisco,CA,USA
+2025-07-18,179.81,USD,Shipping,USPS,Austin,TX,USA
+2025-06-25,259.3,EUR,Travel-Hotel,Marriott,London,ENG,UK
+2025-06-04,653.53,USD,Travel-Hotel,Marriott,San Francisco,CA,USA
+2025-07-16,32.03,USD,Food,DoorDash,Austin,TX,USA
+2025-08-17,371.93,CAD,Utilities-Electricity,PG&E,London,ENG,UK
+2025-08-08,56.54,CAD,Travel-Ridehail,Lyft,Toronto,ON,Canada
+2025-07-19,143.21,GBP,Facilities,Staples,London,ENG,UK
+2025-06-10,391.13,GBP,Facilities,Ikea Business,Toronto,ON,Canada
+2025-07-22,33.41,CAD,Food,Local Cafe,Chicago,IL,USA
+2025-07-23,2028.93,USD,Cloud/IT,AWS,Austin,TX,USA
+2025-06-13,196.38,USD,Shipping,FedEx,San Francisco,CA,USA
+2025-05-31,63.6,EUR,Shipping,UPS,New York,NY,USA
+2025-08-15,211.24,USD,Travel-Hotel,Hilton,Berlin,BE,Germany
+2025-07-22,37.96,CAD,Food,Chipotle,Chicago,IL,USA
+2025-07-28,200.43,EUR,Facilities,Office Depot,San Francisco,CA,USA
+2025-07-19,274.06,EUR,Facilities,Ikea Business,San Francisco,CA,USA
+2025-07-07,3359.57,USD,Utilities-Electricity,PG&E,Berlin,BE,Germany
+2025-07-25,775.56,USD,Cloud/IT,AWS,San Francisco,CA,USA
+2025-08-11,26.01,USD,Travel-Ridehail,Lyft,Austin,TX,USA
+2025-06-15,2346.73,USD,Travel-Air,Delta,Seattle,WA,USA
+2025-06-27,311.35,USD,Facilities,Staples,Berlin,BE,Germany
+2025-05-26,2382.58,USD,Utilities-Electricity,Pacific Power,San Francisco,CA,USA
+2025-08-14,33.83,EUR,Food,DoorDash,Berlin,BE,Germany
+2025-08-09,12.85,USD,Food,DoorDash,Seattle,WA,USA
+2025-07-06,2138.48,USD,Utilities-Electricity,PG&E,San Francisco,CA,USA
+2025-06-11,242.78,USD,Travel-Hotel,Hilton,Chicago,IL,USA
+2025-06-26,751.18,USD,Travel-Air,Southwest,San Francisco,CA,USA
+2025-08-05,438.05,EUR,Utilities-Electricity,ConEd,Austin,TX,USA
+2025-08-13,1746.79,USD,Cloud/IT,Google Cloud,Chicago,IL,USA

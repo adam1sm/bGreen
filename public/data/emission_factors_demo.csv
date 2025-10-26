@@ -1,0 +1,12 @@
+category,region,kgCO2e_per_USD,note
+Travel-Air,ANY,0.65,Short/med-haul economy blended factor
+Travel-Hotel,ANY,0.18,Hotel scope 1/2 + services blended
+Travel-Ridehail,ANY,0.22,Gas/diesel mix for urban rides
+Food,ANY,0.3,Average prepared food
+Cloud/IT,ANY,0.12,Data center services (global avg)
+Facilities,ANY,0.1,Office supplies & services
+Utilities-Electricity,ANY,0.5,Grid electricity blended
+Shipping,ANY,0.28,Parcel ground/air mix
+Utilities-Electricity,US-CA,0.32,Lower-carbon grid proxy
+Utilities-Electricity,US-TX,0.58,Higher fossil share proxy
+Cloud/IT,US-OR,0.07,Hydro/wind-rich region proxy

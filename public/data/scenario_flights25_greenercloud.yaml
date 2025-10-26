@@ -1,0 +1,18 @@
+# Killer scenario: "Cut flights 25% and switch to greener cloud"
+# This YAML describes how to transform the baseline for a what-if analysis.
+
+title: Cut flights 25% and switch to greener cloud
+slug: flights-25-greener-cloud
+steps:
+  - action: scale_category_spend
+    category: Travel-Air
+    scale_factor: 0.75   # reduce air travel spend by 25%
+  - action: region_override_for_category
+    category: Cloud/IT
+    from_region: ANY
+    to_region: US-OR     # assume migration to greener region for cloud
+  - action: note
+    text: |
+      This scenario demonstrates a realistic policy shift:
+      fewer flights plus moving compute to a greener region.
+      It should show both immediate and structural emissions drops.
