@@ -1,16 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { loadDemo } from "@/lib/data/loaders";
-import { baselineTotals, applyScenario } from "@/lib/data/math";
+import { loadDemo } from "../lib/data/loaders";
+import { baselineTotals, applyScenario } from "../lib/data/math";
 
 type Totals = ReturnType<typeof baselineTotals>;
 
 const scenario = {
   title: "Cut flights by 25% + move cloud to Oregon?",
   steps: [
-    { action: "scale_category_spend", category: "Travel-Air", scale_factor: 0.75 },
-    { action: "region_override_for_category", category: "Cloud/IT", from_region: "ANY", to_region: "US-OR" },
+    {
+      action: "scale_category_spend",
+      category: "Travel-Air",
+      scale_factor: 0.75,
+    },
+    {
+      action: "region_override_for_category",
+      category: "Cloud/IT",
+      from_region: "ANY",
+      to_region: "US-OR",
+    },
   ],
 };
 
@@ -51,7 +60,9 @@ export default function DemoClient() {
       setTimeout(() => setRevealing(false), 1000);
     } catch (e: any) {
       setError(e?.message || String(e));
-      setTx(null); setEf(null); setFx(null);
+      setTx(null);
+      setEf(null);
+      setFx(null);
     } finally {
       setLoading(false);
     }
@@ -104,12 +115,18 @@ export default function DemoClient() {
 
       {/* Credibility panel (simple counts + expandable raw row) */}
       <div className="text-xs p-3 rounded-xl border border-zinc-700/40">
-        <div>tx: {tx?.length ?? 0} • ef: {ef?.length ?? 0} • fx: {fx?.length ?? 0}</div>
+        <div>
+          tx: {tx?.length ?? 0} • ef: {ef?.length ?? 0} • fx: {fx?.length ?? 0}
+        </div>
         {error && <div className="text-red-500 mt-1">Error: {error}</div>}
         {tx && tx.length > 0 && (
           <details className="mt-2">
-            <summary className="cursor-pointer">See an example transaction entry</summary>
-            <pre className="mt-2 overflow-auto">{JSON.stringify(tx[0], null, 2)}</pre>
+            <summary className="cursor-pointer">
+              See an example transaction entry
+            </summary>
+            <pre className="mt-2 overflow-auto">
+              {JSON.stringify(tx[0], null, 2)}
+            </pre>
           </details>
         )}
       </div>
@@ -118,12 +135,20 @@ export default function DemoClient() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Tile
           title="Baseline: total spend (USD)"
-          value={!base || revealing ? "—" : `$${Math.round(base.totalUSD).toLocaleString()}`}
+          value={
+            !base || revealing
+              ? "—"
+              : `$${Math.round(base.totalUSD).toLocaleString()}`
+          }
           loading={loading || revealing}
         />
         <Tile
           title="Baseline: total emissions"
-          value={!base || revealing ? "—" : `${Math.round(base.totalKg).toLocaleString()} kg CO₂e`}
+          value={
+            !base || revealing
+              ? "—"
+              : `${Math.round(base.totalKg).toLocaleString()} kg CO₂e`
+          }
           loading={loading || revealing}
         />
         {showScenarioCols && (
@@ -131,7 +156,9 @@ export default function DemoClient() {
             title="Scenario delta"
             value={
               after
-                ? `↓ ${((1 - after.totalKg / (base!.totalKg)) * 100).toFixed(1)}% decrease`
+                ? `↓ ${((1 - after.totalKg / base!.totalKg) * 100).toFixed(
+                    1
+                  )}% decrease`
                 : "—"
             }
             accent={!!after}
@@ -158,77 +185,113 @@ export default function DemoClient() {
             </tr>
           </thead>
           <tbody>
-            {(loading || revealing)
+            {loading || revealing
               ? Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={`skeleton-${i}`} className="border-t border-zinc-200 dark:border-zinc-800 animate-pulse">
-                    <Td><div className="h-4 w-40 rounded bg-zinc-200 dark:bg-zinc-800" /></Td>
-                    <Td className="text-right"><div className="ml-auto h-4 w-24 rounded bg-zinc-200 dark:bg-zinc-800" /></Td>
-                    <Td className="text-right"><div className="ml-auto h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800" /></Td>
-                    <Td className="text-right"><div className="ml-auto h-4 w-16 rounded bg-zinc-200 dark:bg-zinc-800" /></Td>
+                  <tr
+                    key={`skeleton-${i}`}
+                    className="border-t border-zinc-200 dark:border-zinc-800 animate-pulse"
+                  >
+                    <Td>
+                      <div className="h-4 w-40 rounded bg-zinc-200 dark:bg-zinc-800" />
+                    </Td>
+                    <Td className="text-right">
+                      <div className="ml-auto h-4 w-24 rounded bg-zinc-200 dark:bg-zinc-800" />
+                    </Td>
+                    <Td className="text-right">
+                      <div className="ml-auto h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800" />
+                    </Td>
+                    <Td className="text-right">
+                      <div className="ml-auto h-4 w-16 rounded bg-zinc-200 dark:bg-zinc-800" />
+                    </Td>
                     {showScenarioCols && (
                       <>
-                        <Td className="text-right"><div className="ml-auto h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800" /></Td>
-                        <Td className="text-right"><div className="ml-auto h-4 w-14 rounded bg-zinc-200 dark:bg-zinc-800" /></Td>
+                        <Td className="text-right">
+                          <div className="ml-auto h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800" />
+                        </Td>
+                        <Td className="text-right">
+                          <div className="ml-auto h-4 w-14 rounded bg-zinc-200 dark:bg-zinc-800" />
+                        </Td>
                       </>
                     )}
                   </tr>
                 ))
               : rows.map((r) => {
-                const afterKg = after?.byCat?.[r.category]?.kg as number | undefined;
-                const hasAfter = typeof afterKg === "number";
-              
-                const deltaRaw = hasAfter ? afterKg - r.kg : undefined;
-                const deltaRounded =
-                  typeof deltaRaw === "number" ? Math.round(deltaRaw) : undefined;
-                const showDelta = typeof deltaRounded === "number" && deltaRounded !== 0;
-              
-                return (
-                  <tr key={r.category} className="border-t border-zinc-200 dark:border-zinc-800">
-                    <Td>{r.category}</Td>
-                    <Td className="text-right">${Math.round(r.usd).toLocaleString()}</Td>
-                    <Td className="text-right">{Math.round(r.kg).toLocaleString()}</Td>
-                    <Td className="text-right">{r.kg_perc.toFixed(1)}%</Td>
-              
-                    {showScenarioCols && (
-                      <>
-                        {/* kg after */}
-                        <Td className="text-right">
-                          {revealingScenario ? (
-                            <div className="ml-auto h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                          ) : (
-                            hasAfter ? Math.round(afterKg!).toLocaleString() : "\u00A0"
-                          )}
-                        </Td>
-              
-                        {/* Δ kg — blank when 0 */}
-                        <Td
-                          className={`text-right ${
-                            !revealingScenario && showDelta && deltaRounded! < 0
-                              ? "text-emerald-600"
-                              : ""
-                          } ${
-                            !revealingScenario && showDelta && deltaRounded! > 0
-                              ? "text-rose-500"
-                              : ""
-                          }`}
-                        >
-                          {revealingScenario ? (
-                            <div className="ml-auto h-4 w-14 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                          ) : (
-                            showDelta ? deltaRounded!.toLocaleString() : "\u00A0"
-                          )}
-                        </Td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
+                  const afterKg = after?.byCat?.[r.category]?.kg as
+                    | number
+                    | undefined;
+                  const hasAfter = typeof afterKg === "number";
+
+                  const deltaRaw = hasAfter ? afterKg - r.kg : undefined;
+                  const deltaRounded =
+                    typeof deltaRaw === "number"
+                      ? Math.round(deltaRaw)
+                      : undefined;
+                  const showDelta =
+                    typeof deltaRounded === "number" && deltaRounded !== 0;
+
+                  return (
+                    <tr
+                      key={r.category}
+                      className="border-t border-zinc-200 dark:border-zinc-800"
+                    >
+                      <Td>{r.category}</Td>
+                      <Td className="text-right">
+                        ${Math.round(r.usd).toLocaleString()}
+                      </Td>
+                      <Td className="text-right">
+                        {Math.round(r.kg).toLocaleString()}
+                      </Td>
+                      <Td className="text-right">{r.kg_perc.toFixed(1)}%</Td>
+
+                      {showScenarioCols && (
+                        <>
+                          {/* kg after */}
+                          <Td className="text-right">
+                            {revealingScenario ? (
+                              <div className="ml-auto h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
+                            ) : hasAfter ? (
+                              Math.round(afterKg!).toLocaleString()
+                            ) : (
+                              "\u00A0"
+                            )}
+                          </Td>
+
+                          {/* Δ kg — blank when 0 */}
+                          <Td
+                            className={`text-right ${
+                              !revealingScenario &&
+                              showDelta &&
+                              deltaRounded! < 0
+                                ? "text-emerald-600"
+                                : ""
+                            } ${
+                              !revealingScenario &&
+                              showDelta &&
+                              deltaRounded! > 0
+                                ? "text-rose-500"
+                                : ""
+                            }`}
+                          >
+                            {revealingScenario ? (
+                              <div className="ml-auto h-4 w-14 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
+                            ) : showDelta ? (
+                              deltaRounded!.toLocaleString()
+                            ) : (
+                              "\u00A0"
+                            )}
+                          </Td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
           </tbody>
         </table>
       </div>
 
       <p className="text-xs opacity-70">
-        Greenline is a work in progress. More features and data sources coming soon.
+        Greenline is a work in progress. More features and data sources coming
+        soon.
       </p>
     </div>
   );
@@ -259,16 +322,30 @@ function Tile({
       {loading ? (
         <div className="mt-2 h-6 w-28 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
       ) : (
-        <div className={`text-xl font-semibold mt-1 ${valueClassName}`}>{value}</div>
+        <div className={`text-xl font-semibold mt-1 ${valueClassName}`}>
+          {value}
+        </div>
       )}
     </div>
   );
 }
 
-function Th({ children, className = "" }: { children: any; className?: string }) {
+function Th({
+  children,
+  className = "",
+}: {
+  children: any;
+  className?: string;
+}) {
   return <th className={`px-4 py-2 font-medium ${className}`}>{children}</th>;
 }
 
-function Td({ children, className = "" }: { children: any; className?: string }) {
+function Td({
+  children,
+  className = "",
+}: {
+  children: any;
+  className?: string;
+}) {
   return <td className={`px-4 py-2 ${className}`}>{children}</td>;
 }
